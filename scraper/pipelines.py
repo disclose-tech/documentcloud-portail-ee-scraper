@@ -219,7 +219,7 @@ class UploadPipeline:
                     publish_at=item["publication_datetime_dcformat"],
                     source="evaluation-environnementale.developpement-durable.gouv.fr",
                     language="fra",
-                    access=item["access"],
+                    access=spider.access_level,
                     data=data,
                 )
         except Exception as e:
