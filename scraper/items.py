@@ -40,3 +40,5 @@ class DocumentItem(Item):
 
     departments = Field()
     departments_sources = Field()
+
+    local_file_path = Field()

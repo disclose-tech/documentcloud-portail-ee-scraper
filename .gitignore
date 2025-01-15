@@ -135,3 +135,4 @@ scrapy.log
 data_*.csv
 event_data.json
 event_data*.json
+downloaded_files/

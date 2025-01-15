@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 import logging
 import json
 import hashlib
+import shutil
 
 from itemadapter import ItemAdapter
 
@@ -212,7 +213,7 @@ class UploadPipeline:
         try:
             if not spider.dry_run:
                 spider.client.documents.upload(
-                    item["source_file_url"],
+                    item["local_file_path"],
                     project=spider.target_project,
                     title=item["title"],
                     description=item["project"],
@@ -320,3 +321,19 @@ class MailPipeline:
 
         if not spider.dry_run:
             spider.send_mail(subject, content)
+
+
+class DeleteFilesPipeline:
+
+    def process_item(self, item, spider):
+
+        if os.path.isfile(item["local_file_path"]):
+            os.remove(item["local_file_path"])
+
+        return item
+
+    def close_spider(self, spider):
+
+        # Delete the downloaded_zips folder
+        if os.path.isdir("downloaded_files"):
+            shutil.rmtree("downloaded_files")

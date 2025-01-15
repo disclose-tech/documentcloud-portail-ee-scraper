@@ -77,7 +77,8 @@ ITEM_PIPELINES = {
     "scraper.pipelines.TagDepartmentsPipeline": 600,
     "scraper.pipelines.ProjectIDPipeline": 700,
     "scraper.pipelines.UploadPipeline": 800,
-    "scraper.pipelines.MailPipeline": 999,
+    "scraper.pipelines.MailPipeline": 900,
+    "scraper.pipelines.DeleteFilesPipeline": 999,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

@@ -1,3 +1,4 @@
+import os
 import re
 from datetime import datetime, timedelta
 
@@ -169,4 +170,31 @@ class PEESpider(scrapy.Spider):
                         publication_timestamp=publication_timestamp,
                     )
 
-                    yield doc_item
+                    yield scrapy.Request(
+                        doc_item["source_file_url"],
+                        callback=self.download_document,
+                        cb_kwargs=dict(doc_item=doc_item, file_id=file_id),
+                    )
+
+    def download_document(self, response, doc_item, file_id):
+
+        self.check_upload_limit()
+        self.check_time_limit()
+
+        # Create the folder to hold all files if it does not exist yet
+        if not os.path.exists("./downloaded_files"):
+            os.makedirs("./downloaded_files")
+
+        # Create a folder to hold the current file if it does not exist yet
+        if not os.path.exists(f"./downloaded_files/{file_id}"):
+            os.makedirs(f"./downloaded_files/{file_id}")
+
+        # Save the file in the folder
+
+        local_file_path = f"./downloaded_files/{file_id}/{doc_item['source_filename']}"
+        with open(local_file_path, "wb") as file:
+            file.write(response.body)
+
+        doc_item["local_file_path"] = local_file_path
+
+        yield doc_item
