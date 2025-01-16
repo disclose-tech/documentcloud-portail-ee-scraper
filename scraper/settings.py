@@ -70,9 +70,9 @@ COOKIES_ENABLED = False
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     "scraper.pipelines.ParseDatePipeline": 100,
-    "scraper.pipelines.CategoryPipeline": 200,
+    "scraper.pipelines.BeautifyPipeline": 200,
     "scraper.pipelines.UnsupportedFiletypePipeline": 300,
-    "scraper.pipelines.BeautifyPipeline": 400,
+    "scraper.pipelines.CategoryPipeline": 400,
     "scraper.pipelines.UploadLimitPipeline": 500,
     "scraper.pipelines.TagDepartmentsPipeline": 600,
     "scraper.pipelines.ProjectIDPipeline": 700,

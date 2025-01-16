@@ -9,9 +9,18 @@ from ..items import DocumentItem
 
 
 TARGETS = [
-    {"authority": "Préfet", "region": "Provence-Alpes-Côte d'Azur"},
+    # Grand Est
     {"authority": "Préfet", "region": "Grand Est"},
+    {"authority": "MRAe", "region": "Grand Est"},
+    # Bourgogne-Franche-Comté
+    {"authority": "Préfet", "region": "Bourgogne-Franche-Comté"},
+    {"authority": "MRAe", "region": "Bourgogne-Franche-Comté"},
+    # Pays de la Loire
+    {"authority": "Préfet", "region": "Pays de la Loire"},
+    # Provence-Alpes-Côte d'Azur
+    {"authority": "Préfet", "region": "Provence-Alpes-Côte d'Azur"},
 ]
+
 
 RESULTS_LIST_API_URL = "https://gatew-evaluation-environnementale.developpement-durable.gouv.fr/api/PublishedDocument/Get?start={start}&length={length}&descending_order_id=true&authority={authority}&place={region}"
 
@@ -148,17 +157,26 @@ class PEESpider(scrapy.Spider):
                 if not DOCUMENT_DOWNLOAD_URL.format(file_id=file_id) in self.event_data:
 
                     # Publication Date
-                    if a["folderName"] == "Pièces du dossier":
-                        publication_timestamp = data["publishedDate"]
-
-                    elif a["folderName"] == "Décision":
+                    if a["folderName"] in ["Décision", "Avis"]:
                         if data["updatedDate"]:
                             publication_timestamp = data["updatedDate"]
                         else:
                             publication_timestamp = data["publishedDate"]
+                    else:
+                        publication_timestamp = data["publishedDate"]
+
+                    # Add "Décision" to the title if not present
+                    doc_title = a["name"]
+                    if a["folderName"] == "Décision":
+                        if (
+                            not "décision" in doc_title.lower()
+                            and not "decision" in doc_title.lower()
+                        ):
+                            doc_title = a["folderName"] + " - " + doc_title.strip()
 
                     doc_item = DocumentItem(
-                        title=a["folderName"] + " - " + a["name"],
+                        # title=a["folderName"] + " - " + a["name"],
+                        title=doc_title,
                         project=project_title,
                         authority=data["authority"],
                         category_local=data["categoryName"],

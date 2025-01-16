@@ -45,17 +45,6 @@ class ParseDatePipeline:
         return item
 
 
-class CategoryPipeline:
-    """Attributes the final category of the document."""
-
-    def process_item(self, item, spider):
-
-        if "cas par cas" in item["category_local"].lower():
-            item["category"] = "Cas par cas"
-
-        return item
-
-
 class UnsupportedFiletypePipeline:
 
     def process_item(self, item, spider):
@@ -84,7 +73,9 @@ class BeautifyPipeline:
         # Title
         item["title"] = item["title"].replace("_", " ")
         item["title"] = item["title"].rstrip(".,")
+        item["title"] = item["title"].strip("-")
         item["title"] = item["title"].strip()
+
         item["title"] = item["title"][0].capitalize() + item["title"][1:]
 
         # Authority
@@ -92,6 +83,26 @@ class BeautifyPipeline:
         item["authority"] = item["authority"].replace(
             "Préfet de la région", "Préfecture de région"
         )
+
+        # Category
+        item["category_local"] = (
+            item["category_local"].replace(" ", " ").replace("’", "'")
+        )
+
+        return item
+
+
+class CategoryPipeline:
+    """Attributes the final category of the document."""
+
+    def process_item(self, item, spider):
+
+        if "cas par cas" in item["category_local"].lower():
+            item["category"] = "Cas par cas"
+
+        elif item["category_local"].startswith("Demande d'avis"):
+            item["category"] = "Avis"
+
         return item
 
 
