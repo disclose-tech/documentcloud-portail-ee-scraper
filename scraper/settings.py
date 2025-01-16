@@ -34,6 +34,9 @@ DOWNLOAD_DELAY = 1.5
 # CONCURRENT_REQUESTS_PER_DOMAIN = 16
 # CONCURRENT_REQUESTS_PER_IP = 16
 
+DOWNLOAD_WARNSIZE = 536870912  # 500 Mb
+DOWNLOAD_MAXSIZE = 1073741824 * 1  # Gb
+
 # Disable cookies (enabled by default)
 # Set to false following advice from Scrapy's docs
 # https://docs.scrapy.org/en/latest/topics/practices.html#avoiding-getting-banned
