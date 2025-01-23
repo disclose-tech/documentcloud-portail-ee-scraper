@@ -97,24 +97,33 @@ class PEESpider(scrapy.Spider):
         # Yield a request per entry/project
         for project in data["data"]:
 
-            doc_id = project["documentId"]
-            url = PROJECT_PAGE_API_URL.format(document_id=doc_id)
+            project_created_year = int(project["publishedDate"][:4])
 
-            # Check if some file_ids are not in event_data
+            if project_created_year in self.target_years:
 
-            file_ids = [int(x) for x in project["publishedAttachmentIds"].split(",")]
+                doc_id = project["documentId"]
+                url = PROJECT_PAGE_API_URL.format(document_id=doc_id)
 
-            already_fully_scraped = True
-            for f_id in file_ids:
-                if not DOCUMENT_DOWNLOAD_URL.format(file_id=f_id) in self.event_data:
-                    already_fully_scraped = False
+                # Check if some file_ids are not in event_data
 
-            if not already_fully_scraped:
-                yield scrapy.Request(
-                    url,
-                    callback=self.parse_project_page,
-                    cb_kwargs=dict(document_id=doc_id),
-                )
+                file_ids = [
+                    int(x) for x in project["publishedAttachmentIds"].split(",")
+                ]
+
+                already_fully_scraped = True
+                for f_id in file_ids:
+                    if (
+                        not DOCUMENT_DOWNLOAD_URL.format(file_id=f_id)
+                        in self.event_data
+                    ):
+                        already_fully_scraped = False
+
+                if not already_fully_scraped:
+                    yield scrapy.Request(
+                        url,
+                        callback=self.parse_project_page,
+                        cb_kwargs=dict(document_id=doc_id),
+                    )
 
         # Next page
         if page * RESULTS_LENGTH < total:
@@ -138,61 +147,58 @@ class PEESpider(scrapy.Spider):
 
         data = response.json()
 
-        year_opened = int(data["publishedDate"].split("-")[0])
+        # Project name
+        municipality = data["municipality"]
+        project_title = data["projectTitle"].strip(" -.")
 
-        if year_opened >= self.from_year:
+        if municipality.lower() not in project_title.lower():
+            project_title += " - " + municipality
 
-            # Project name
-            municipality = data["municipality"]
-            project_title = data["projectTitle"].strip(" -.")
+        for a in data["attachments"]:
 
-            if municipality.lower() not in project_title.lower():
-                project_title += " - " + municipality
+            file_id = a["id"]
 
-            for a in data["attachments"]:
+            # Check event_data
+            if not DOCUMENT_DOWNLOAD_URL.format(file_id=file_id) in self.event_data:
 
-                file_id = a["id"]
-
-                # Check event_data
-                if not DOCUMENT_DOWNLOAD_URL.format(file_id=file_id) in self.event_data:
-
-                    # Publication Date
-                    if a["folderName"] in ["Décision", "Avis"]:
-                        if data["updatedDate"]:
-                            publication_timestamp = data["updatedDate"]
-                        else:
-                            publication_timestamp = data["publishedDate"]
+                # Publication Date
+                if a["folderName"] in ["Décision", "Avis"]:
+                    if data["updatedDate"]:
+                        publication_timestamp = data["updatedDate"]
                     else:
                         publication_timestamp = data["publishedDate"]
+                else:
+                    publication_timestamp = data["publishedDate"]
 
-                    # Add "Décision" to the title if not present
-                    doc_title = a["name"]
-                    if a["folderName"] == "Décision":
-                        if (
-                            not "décision" in doc_title.lower()
-                            and not "decision" in doc_title.lower()
-                        ):
-                            doc_title = a["folderName"] + " - " + doc_title.strip()
+                # Add "Décision" to the title if not present
+                doc_title = a["name"]
+                if a["folderName"] == "Décision":
+                    if (
+                        not "décision" in doc_title.lower()
+                        and not "decision" in doc_title.lower()
+                    ):
+                        doc_title = a["folderName"] + " - " + doc_title.strip()
 
-                    doc_item = DocumentItem(
-                        # title=a["folderName"] + " - " + a["name"],
-                        title=doc_title,
-                        project=project_title,
-                        authority=data["authority"],
-                        category_local=data["categoryName"],
-                        source_file_url=DOCUMENT_DOWNLOAD_URL.format(file_id=file_id),
-                        source_page_url=PROJECT_PAGE_WEB_URL.format(
-                            document_id=document_id
-                        ),
-                        source_filename=a["name"] + "." + a["extension"],
-                        publication_timestamp=publication_timestamp,
-                    )
+                doc_item = DocumentItem(
+                    # title=a["folderName"] + " - " + a["name"],
+                    title=doc_title,
+                    project=project_title,
+                    authority=data["authority"],
+                    category_local=data["categoryName"],
+                    source_file_url=DOCUMENT_DOWNLOAD_URL.format(file_id=file_id),
+                    source_page_url=PROJECT_PAGE_WEB_URL.format(
+                        document_id=document_id
+                    ),
+                    source_filename=a["name"] + "." + a["extension"],
+                    publication_timestamp=publication_timestamp,
+                    year=data["publishedDate"][:4],
+                )
 
-                    yield scrapy.Request(
-                        doc_item["source_file_url"],
-                        callback=self.download_document,
-                        cb_kwargs=dict(doc_item=doc_item, file_id=file_id),
-                    )
+                yield scrapy.Request(
+                    doc_item["source_file_url"],
+                    callback=self.download_document,
+                    cb_kwargs=dict(doc_item=doc_item, file_id=file_id),
+                )
 
     def download_document(self, response, doc_item, file_id):
 

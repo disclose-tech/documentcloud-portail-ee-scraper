@@ -21,6 +21,10 @@ properties:
     title: From year
     description: leave blank for 2024 (beginning of data)
     type: integer
+  to_year:
+    title: To year
+    description: leave blank current year
+    type: integer
   upload_limit:
     title: Maximum number of documents to upload (per run)
     description: 0 for no limit

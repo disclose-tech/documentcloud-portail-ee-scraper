@@ -211,7 +211,7 @@ class UploadPipeline:
             "source_file_url": item["source_file_url"],
             "source_filename": item["source_filename"],
             "source_page_url": item["source_page_url"],
-            # "year": str(item["year"]),
+            # "year": item["year"]),
             "project_id": item["project_id"],
         }
 
@@ -248,7 +248,7 @@ class UploadPipeline:
             spider.event_data[item["source_file_url"]] = {
                 # "last_modified": last_modified,
                 "last_seen": now,
-                # "target_year": spider.target_year,
+                "target_year": item["year"],
                 # "run_id": spider.run_id,
             }
 
@@ -319,7 +319,7 @@ class MailPipeline:
 
             return item_string
 
-        subject = f"PortailEE Scraper {str(spider.from_year)}+ (New: {len(self.items)}) [{spider.run_name}]"
+        subject = f"PortailEE Scraper {str(spider.target_years[0])}-{str(spider.target_years[-1])} (New: {len(self.items)}) [{spider.run_name}]"
 
         if spider.dry_run:
             subject = "[dry run] " + subject
