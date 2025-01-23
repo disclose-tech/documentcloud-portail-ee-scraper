@@ -84,6 +84,8 @@ class BeautifyPipeline:
             "Préfet de la région", "Préfecture de région"
         )
 
+        item["authority"] = item["authority"].replace("MRae de la région", "MRAe")
+
         # Category
         item["category_local"] = (
             item["category_local"].replace(" ", " ").replace("’", "'")
