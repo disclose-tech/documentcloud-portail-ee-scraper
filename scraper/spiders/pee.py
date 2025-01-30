@@ -17,8 +17,10 @@ TARGETS = [
     {"authority": "MRAe", "region": "Bourgogne-Franche-Comté"},
     # Pays de la Loire
     {"authority": "Préfet", "region": "Pays de la Loire"},
+    {"authority": "MRAe", "region": "Pays de la Loire"},
     # Provence-Alpes-Côte d'Azur
     {"authority": "Préfet", "region": "Provence-Alpes-Côte d'Azur"},
+    {"authority": "MRAe", "region": "Provence-Alpes-Côte d'Azur"},
 ]
 
 
