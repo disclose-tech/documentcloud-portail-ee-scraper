@@ -208,10 +208,10 @@ class UploadPipeline:
             "publication_time": item["publication_time"],
             "publication_datetime": item["publication_datetime"],
             "source_scraper": f"PortailEE Scraper",
+            "source_scraper_year": item["year"],
             "source_file_url": item["source_file_url"],
             "source_filename": item["source_filename"],
             "source_page_url": item["source_page_url"],
-            # "year": item["year"]),
             "project_id": item["project_id"],
         }
 
