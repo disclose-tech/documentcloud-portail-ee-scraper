@@ -108,6 +108,9 @@ class PEESpider(scrapy.Spider):
 
                 # Check if some file_ids are not in event_data
 
+                if project["publishedAttachmentIds"] == "":
+                    continue
+
                 file_ids = [
                     int(x) for x in project["publishedAttachmentIds"].split(",")
                 ]
