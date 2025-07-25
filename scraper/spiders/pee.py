@@ -9,18 +9,22 @@ from ..items import DocumentItem
 
 
 TARGETS = [
-    # Grand Est
-    {"authority": "Préfet", "region": "Grand Est"},
-    {"authority": "MRAe", "region": "Grand Est"},
-    # Bourgogne-Franche-Comté
-    {"authority": "Préfet", "region": "Bourgogne-Franche-Comté"},
-    {"authority": "MRAe", "region": "Bourgogne-Franche-Comté"},
-    # Pays de la Loire
-    {"authority": "Préfet", "region": "Pays de la Loire"},
-    {"authority": "MRAe", "region": "Pays de la Loire"},
-    # Provence-Alpes-Côte d'Azur
+    # Autorité Environnementale Ministre (CGDD)
+    # {"authority": "Autorité Environnementale Ministre (CGDD)", "region": None},
+    # Auvergne-Rhône-Alpes
+    # {"authority": "MRAe", "region": "Auvergne-Rhône-Alpes"}, # Problem for now. Docs are from MRAe BFC
+    # # Bourgogne-Franche-Comté
+    # {"authority": "Préfet", "region": "Bourgogne-Franche-Comté"},
+    # {"authority": "MRAe", "region": "Bourgogne-Franche-Comté"},
+    # # Grand Est
+    # {"authority": "Préfet", "region": "Grand Est"},
+    # {"authority": "MRAe", "region": "Grand Est"},
+    # # Pays de la Loire
+    # {"authority": "Préfet", "region": "Pays de la Loire"},
+    # {"authority": "MRAe", "region": "Pays de la Loire"},
+    # # Provence-Alpes-Côte d'Azur
     {"authority": "Préfet", "region": "Provence-Alpes-Côte d'Azur"},
-    {"authority": "MRAe", "region": "Provence-Alpes-Côte d'Azur"},
+    # {"authority": "MRAe", "region": "Provence-Alpes-Côte d'Azur"},
 ]
 
 
@@ -106,17 +110,31 @@ class PEESpider(scrapy.Spider):
                 doc_id = project["documentId"]
                 url = PROJECT_PAGE_API_URL.format(document_id=doc_id)
 
+                # if doc_id in ["8128", 8128]:
+                #     self.logger.warn(
+                #         f"Project 8128 publishedAttachmentIds: {project['publishedAttachmentIds']}"
+                #     )
+
                 # Check if some file_ids are not in event_data
 
                 if project["publishedAttachmentIds"] == "":
                     continue
 
-                file_ids = [
-                    int(x) for x in project["publishedAttachmentIds"].split(",")
-                ]
+                file_ids = [x for x in project["publishedAttachmentIds"].split(",")]
+
+                valid_file_ids = []
+                for i in file_ids:
+                    try:
+                        i = int(i)
+                    except ValueError:
+                        self.logger.warning(
+                            f"Project {doc_id}: Could not convert this publishedAttachmentId to int: {i}"
+                        )
+                    else:
+                        valid_file_ids.append(int(i))
 
                 already_fully_scraped = True
-                for f_id in file_ids:
+                for f_id in valid_file_ids:
                     if (
                         not DOCUMENT_DOWNLOAD_URL.format(file_id=f_id)
                         in self.event_data
