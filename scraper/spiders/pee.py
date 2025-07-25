@@ -10,25 +10,25 @@ from ..items import DocumentItem
 
 TARGETS = [
     # Autorité Environnementale Ministre (CGDD)
-    # {"authority": "Autorité Environnementale Ministre (CGDD)", "region": None},
+    {"authority": "Autorité Environnementale Ministre (CGDD)"},
     # Auvergne-Rhône-Alpes
     # {"authority": "MRAe", "region": "Auvergne-Rhône-Alpes"}, # Problem for now. Docs are from MRAe BFC
-    # # Bourgogne-Franche-Comté
-    # {"authority": "Préfet", "region": "Bourgogne-Franche-Comté"},
-    # {"authority": "MRAe", "region": "Bourgogne-Franche-Comté"},
-    # # Grand Est
-    # {"authority": "Préfet", "region": "Grand Est"},
-    # {"authority": "MRAe", "region": "Grand Est"},
-    # # Pays de la Loire
-    # {"authority": "Préfet", "region": "Pays de la Loire"},
-    # {"authority": "MRAe", "region": "Pays de la Loire"},
-    # # Provence-Alpes-Côte d'Azur
+    # Bourgogne-Franche-Comté
+    {"authority": "Préfet", "region": "Bourgogne-Franche-Comté"},
+    {"authority": "MRAe", "region": "Bourgogne-Franche-Comté"},
+    # Grand Est
+    {"authority": "Préfet", "region": "Grand Est"},
+    {"authority": "MRAe", "region": "Grand Est"},
+    # Pays de la Loire
+    {"authority": "Préfet", "region": "Pays de la Loire"},
+    {"authority": "MRAe", "region": "Pays de la Loire"},
+    # Provence-Alpes-Côte d'Azur
     {"authority": "Préfet", "region": "Provence-Alpes-Côte d'Azur"},
-    # {"authority": "MRAe", "region": "Provence-Alpes-Côte d'Azur"},
+    {"authority": "MRAe", "region": "Provence-Alpes-Côte d'Azur"},
 ]
 
 
-RESULTS_LIST_API_URL = "https://gatew-evaluation-environnementale.developpement-durable.gouv.fr/api/PublishedDocument/Get?start={start}&length={length}&descending_order_id=true&authority={authority}&place={region}"
+RESULTS_LIST_API_URL = "https://gatew-evaluation-environnementale.developpement-durable.gouv.fr/api/PublishedDocument/Get?start={start}&length={length}&descending_order_id=true&authority={authority}"
 
 RESULTS_LENGTH = 100
 
@@ -76,14 +76,21 @@ class PEESpider(scrapy.Spider):
                 start=0,
                 length=RESULTS_LENGTH,
                 authority=target["authority"],
-                region=target["region"],
+                # region=target["region"],
             )
+
+            if "region" in target and target["region"]:
+                url += f"&place={target['region']}"
+
+            self.logger.debug(f"Will fetch results from URL : {url}")
 
             requests.append(
                 scrapy.Request(
                     url,
                     cb_kwargs=dict(
-                        authority=target["authority"], region=target["region"], page=1
+                        authority=target["authority"],
+                        region=target["region"] if "region" in target else None,
+                        page=1,
                     ),
                     callback=self.parse_results,
                 )
@@ -103,17 +110,14 @@ class PEESpider(scrapy.Spider):
         # Yield a request per entry/project
         for project in data["data"]:
 
+            self.logger.debug(f"Seen: Project {project['projectTitle']}")
+
             project_created_year = int(project["publishedDate"][:4])
 
             if project_created_year in self.target_years:
 
                 doc_id = project["documentId"]
                 url = PROJECT_PAGE_API_URL.format(document_id=doc_id)
-
-                # if doc_id in ["8128", 8128]:
-                #     self.logger.warn(
-                #         f"Project 8128 publishedAttachmentIds: {project['publishedAttachmentIds']}"
-                #     )
 
                 # Check if some file_ids are not in event_data
 
