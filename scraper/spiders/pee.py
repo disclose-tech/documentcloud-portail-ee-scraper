@@ -7,18 +7,24 @@ from scrapy.exceptions import CloseSpider
 
 from ..items import DocumentItem
 
-
 TARGETS = [
     # Autorité Environnementale Ministre (CGDD)
     {"authority": "Autorité Environnementale Ministre (CGDD)"},
-    # Auvergne-Rhône-Alpes
-    # {"authority": "MRAe", "region": "Auvergne-Rhône-Alpes"}, # Problem for now. Docs are from MRAe BFC
+    # IGEDD
+    {"authority": "IGEDD"},
+    # Corse
+    {"authority": "Préfet", "region": "Corse"},
     # Bourgogne-Franche-Comté
     {"authority": "Préfet", "region": "Bourgogne-Franche-Comté"},
     {"authority": "MRAe", "region": "Bourgogne-Franche-Comté"},
     # Grand Est
     {"authority": "Préfet", "region": "Grand Est"},
     {"authority": "MRAe", "region": "Grand Est"},
+    # Normandie
+    {"authority": "Préfet", "region": "Normandie"},
+    # Occitanie
+    {"authority": "Préfet", "region": "Occitanie"},
+    {"authority": "MRAe", "region": "Occitanie"},
     # Pays de la Loire
     {"authority": "Préfet", "region": "Pays de la Loire"},
     {"authority": "MRAe", "region": "Pays de la Loire"},
