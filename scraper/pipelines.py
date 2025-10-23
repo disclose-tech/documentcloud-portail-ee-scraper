@@ -54,7 +54,7 @@ class UnsupportedFiletypePipeline:
 
         if file_extension not in SUPPORTED_EXTENSIONS:
             # Drop the item
-            raise DropItem("Unsupported filetype")
+            raise SilentDropItem("Unsupported filetype")
         else:
             return item
 
