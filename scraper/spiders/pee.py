@@ -12,16 +12,38 @@ TARGETS = [
     {"authority": "Autorité Environnementale Ministre (CGDD)"},
     # IGEDD
     {"authority": "IGEDD"},
-    # Corse
-    {"authority": "Préfet", "region": "Corse"},
+    #
+    # Auvergne-Rhône-Alpes
+    {"authority": "Préfet", "region": "Auvergne-Rhône-Alpes"},
+    {"authority": "MRAe", "region": "Auvergne-Rhône-Alpes"},
     # Bourgogne-Franche-Comté
     {"authority": "Préfet", "region": "Bourgogne-Franche-Comté"},
     {"authority": "MRAe", "region": "Bourgogne-Franche-Comté"},
+    # Bretagne
+    {"authority": "Préfet", "region": "Bretagne"},
+    {"authority": "MRAe", "region": "Bretagne"},
+    # Centre-Val de Loire
+    {"authority": "Préfet", "region": "Centre-Val de Loire"},
+    {"authority": "MRAe", "region": "Centre-Val de Loire"},
+    # # Corse
+    {"authority": "Préfet", "region": "Corse"},
+    {"authority": "MRAe", "region": "Corse"},
     # Grand Est
     {"authority": "Préfet", "region": "Grand Est"},
     {"authority": "MRAe", "region": "Grand Est"},
-    # Normandie
+    # Guyane
+    {"authority": "Préfet", "region": "Guyane"},
+    {"authority": "MRAe", "region": "Guyane"},
+    # Hauts-de-France
+    {"authority": "Préfet", "region": "Hauts-de-France"},
+    # Île-de-France
+    {"authority": "Préfet", "region": "Île-de-France"},
+    {"authority": "MRAe", "region": "Île-de-France"},
+    # # Normandie
     {"authority": "Préfet", "region": "Normandie"},
+    {"authority": "Préfet", "region": "Normandie"},
+    # Nouvelle-Aquitaine
+    {"authority": "Préfet", "region": "Nouvelle-Aquitaine"},
     # Occitanie
     {"authority": "Préfet", "region": "Occitanie"},
     {"authority": "MRAe", "region": "Occitanie"},
@@ -31,6 +53,16 @@ TARGETS = [
     # Provence-Alpes-Côte d'Azur
     {"authority": "Préfet", "region": "Provence-Alpes-Côte d'Azur"},
     {"authority": "MRAe", "region": "Provence-Alpes-Côte d'Azur"},
+    #
+    # MISSING :
+    # {"authority": "Préfet", "region": "Guadeloupe"},
+    # {"authority": "MRAe", "region": "Guadeloupe"},
+    # {"authority": "MRAe", "region": "Hauts-de-France"},
+    # {"authority": "MRAe", "region": "Nouvelle-Aquitaine"},
+    # {"authority": "Préfet", "region": "Saint-Martin"},
+    # {"authority": "MRAe", "region": "Saint-Martin"},
+    # {"authority": "Préfet", "region": "Saint-Pierre-et-Miquelon"},
+    # {"authority": "MRAe", "region": "Saint-Pierre-et-Miquelon"},
 ]
 
 
