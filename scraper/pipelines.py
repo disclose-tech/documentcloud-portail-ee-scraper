@@ -191,7 +191,7 @@ class UploadPipeline:
                     data = json.load(file)
                     spider.event_data = data
             except:
-                spider.event_data = None
+                spider.event_data = {}
 
         if spider.event_data:
             spider.logger.info(
@@ -200,6 +200,14 @@ class UploadPipeline:
         else:
             spider.logger.info("No event data was loaded.")
             spider.event_data = {}
+
+        # ignored docs
+        ignore_url = "https://gatew-evaluation-environnementale.developpement-durable.gouv.fr/api/Attachment/PublishedDownload?ctsFileId=142103"
+        if not ignore_url in spider.event_data:
+            spider.event_data[ignore_url] = {
+                "last_seen": datetime.datetime.now().isoformat(timespec="seconds"),
+                "target_year": "2025",
+            }
 
     def process_item(self, item, spider):
 
