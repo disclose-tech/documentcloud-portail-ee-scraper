@@ -109,6 +109,15 @@ class CategoryPipeline:
         elif item["category_local"].startswith("Demande d'avis"):
             item["category"] = "Avis"
 
+        elif item["category_local"] in ["Avis", "Avis Projet"]:
+            item["category"] = "Avis"
+
+        else:
+            subject = "Maintenance needed on portail-ee-scraper"
+            content = f"A new category has appeared: {item['category_local']}. Modify the code to import the documents in the correct category."
+            spider.send_mail(subject, content)
+            raise DropItem("Unknown category_local")
+
         return item
 
 
