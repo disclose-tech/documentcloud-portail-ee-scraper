@@ -8,6 +8,7 @@ import logging
 import json
 import hashlib
 import shutil
+import sys
 
 from itemadapter import ItemAdapter
 
@@ -19,10 +20,24 @@ from .log import SilentDropItem
 from .departments import department_from_authority, departments_from_project_name
 
 
+class SpiderPipeline:
+    """Base class for pipelines that need access to the spider instance.
+
+    Provides from_crawler() to store spider as self.spider.
+    Inherit from this class instead of defining from_crawler() in each pipeline.
+    """
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        pipeline = cls()
+        pipeline.spider = crawler.spider
+        return pipeline
+
+
 class ParseDatePipeline:
     """Parse dates from scraped data."""
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
         """Parses date from the extracted string."""
 
         # Publication date
@@ -47,7 +62,7 @@ class ParseDatePipeline:
 
 class UnsupportedFiletypePipeline:
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
 
         filename, file_extension = os.path.splitext(item["source_filename"])
         file_extension = file_extension.lower()
@@ -60,7 +75,7 @@ class UnsupportedFiletypePipeline:
 
 
 class BeautifyPipeline:
-    def process_item(self, item, spider):
+    def process_item(self, item):
         """Beautify & harmonize project & title names."""
 
         # Project
@@ -98,10 +113,12 @@ class BeautifyPipeline:
         return item
 
 
-class CategoryPipeline:
+class CategoryPipeline(SpiderPipeline):
     """Attributes the final category of the document."""
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
+
+        spider = self.spider
 
         if "cas par cas" in item["category_local"].lower():
             item["category"] = "Cas par cas"
@@ -121,13 +138,14 @@ class CategoryPipeline:
         return item
 
 
-class UploadLimitPipeline:
+class UploadLimitPipeline(SpiderPipeline):
     """Sends the signal to close the spider once the upload limit is attained."""
 
-    def open_spider(self, spider):
+    def open_spider(self):
         self.number_of_docs = 0
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
+        spider = self.spider
         self.number_of_docs += 1
 
         if spider.upload_limit == 0 or self.number_of_docs < spider.upload_limit + 1:
@@ -139,7 +157,7 @@ class UploadLimitPipeline:
 
 class TagDepartmentsPipeline:
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
 
         authority_department = department_from_authority(item["authority"])
 
@@ -161,7 +179,7 @@ class TagDepartmentsPipeline:
 
 class ProjectIDPipeline:
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
 
         project_name = item["project"]
         source_page_url = item["source_page_url"]
@@ -175,10 +193,11 @@ class ProjectIDPipeline:
         return item
 
 
-class UploadPipeline:
+class UploadPipeline(SpiderPipeline):
     """Upload document to DocumentCloud & store event data."""
 
-    def open_spider(self, spider):
+    def open_spider(self):
+        spider = self.spider
         documentcloud_logger = logging.getLogger("documentcloud")
         documentcloud_logger.setLevel(logging.WARNING)
 
@@ -218,7 +237,9 @@ class UploadPipeline:
                 "target_year": "2025",
             }
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
+
+        spider = self.spider
 
         data = {
             "authority": item["authority"],
@@ -279,8 +300,10 @@ class UploadPipeline:
 
         return item
 
-    def close_spider(self, spider):
+    def close_spider(self):
         """Update event data when the spider closes."""
+
+        spider = self.spider
 
         if not spider.dry_run and spider.run_id:
             spider.store_event_data(spider.event_data)
@@ -309,19 +332,21 @@ class UploadPipeline:
                 )
 
 
-class MailPipeline:
+class MailPipeline(SpiderPipeline):
     """Send scraping run report."""
 
-    def open_spider(self, spider):
+    def open_spider(self):
         self.items = []
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
 
         self.items.append(item)
 
         return item
 
-    def close_spider(self, spider):
+    def close_spider(self):
+
+        spider = self.spider
 
         def print_item(item, error=False):
             item_string = f"""
@@ -340,7 +365,12 @@ class MailPipeline:
 
             return item_string
 
-        subject = f"PortailEE Scraper {str(spider.target_years[0])}-{str(spider.target_years[-1])} (New: {len(self.items)}) [{spider.run_name}]"
+        if len(self.spider.target_years) == 1:
+            year_range_str = str(self.spider.target_years[0])
+        else:
+            year_range_str = f"{str(self.spider.target_years[0])}-{str(self.spider.target_years[-1])}"
+
+        subject = f"PortailEE Scraper {year_range_str} (New: {len(self.items)}) [{spider.run_name}]"
 
         if spider.dry_run:
             subject = "[dry run] " + subject
@@ -359,14 +389,14 @@ class MailPipeline:
 
 class DeleteFilesPipeline:
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
 
         if os.path.isfile(item["local_file_path"]):
             os.remove(item["local_file_path"])
 
         return item
 
-    def close_spider(self, spider):
+    def close_spider(self):
 
         # Delete the downloaded_zips folder
         if os.path.isdir("downloaded_files"):

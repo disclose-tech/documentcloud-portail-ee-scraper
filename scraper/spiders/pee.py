@@ -106,7 +106,7 @@ class PEESpider(scrapy.Spider):
         if self.upload_limit_attained:
             raise CloseSpider("Closed due to max documents limit.")
 
-    def start_requests(self):
+    async def start(self):
 
         requests = []
 
@@ -124,19 +124,15 @@ class PEESpider(scrapy.Spider):
 
             self.logger.debug(f"Will fetch results from URL : {url}")
 
-            requests.append(
-                scrapy.Request(
-                    url,
-                    cb_kwargs=dict(
-                        authority=target["authority"],
-                        region=target["region"] if "region" in target else None,
-                        page=1,
-                    ),
-                    callback=self.parse_results,
-                )
+            yield scrapy.Request(
+                url,
+                cb_kwargs=dict(
+                    authority=target["authority"],
+                    region=target["region"] if "region" in target else None,
+                    page=1,
+                ),
+                callback=self.parse_results,
             )
-
-        return requests
 
     def parse_results(self, response, authority, region, page):
 
@@ -171,7 +167,7 @@ class PEESpider(scrapy.Spider):
                     try:
                         i = int(i)
                     except ValueError:
-                        self.logger.warning(
+                        self.logger.debug(
                             f"Project {doc_id}: Could not convert this publishedAttachmentId to int: {i}"
                         )
                     else:
@@ -215,9 +211,25 @@ class PEESpider(scrapy.Spider):
         data = response.json()
 
         # Project name
-        municipality = data["municipality"]
         project_title = data["projectTitle"].strip(" -.")
 
+        # Fallback to referenceNumber if projectTitle is empty
+        if not project_title:
+            reference_number = data.get("referenceNumber", "").strip()
+
+            if reference_number:
+                project_title = f"Dossier {reference_number}"
+            else:
+                # Both missing - log warning and skip this document
+                project_page_url = PROJECT_PAGE_WEB_URL.format(document_id=document_id)
+                self.logger.warning(
+                    f"Skipping project {document_id}: Missing both projectTitle and referenceNumber. {project_page_url} "
+                    f"Authority: {data.get('authority', 'unknown')}, Category: {data.get('categoryName', 'unknown')}"
+                )
+                return
+
+        # Municipality
+        municipality = data["municipality"]
         if municipality.lower() not in project_title.lower():
             project_title += " - " + municipality
 
