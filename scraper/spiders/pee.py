@@ -31,19 +31,23 @@ TARGETS = [
     # Grand Est
     {"authority": "Préfet", "region": "Grand Est"},
     {"authority": "MRAe", "region": "Grand Est"},
+    # Guadeloupe
+    {"authority": "Préfet", "region": "Guadeloupe"},
     # Guyane
     {"authority": "Préfet", "region": "Guyane"},
     {"authority": "MRAe", "region": "Guyane"},
     # Hauts-de-France
     {"authority": "Préfet", "region": "Hauts-de-France"},
+    {"authority": "MRAe", "region": "Hauts-de-France"},
     # Île-de-France
     {"authority": "Préfet", "region": "Île-de-France"},
     {"authority": "MRAe", "region": "Île-de-France"},
     # # Normandie
     {"authority": "Préfet", "region": "Normandie"},
-    {"authority": "Préfet", "region": "Normandie"},
+    {"authority": "MRAe", "region": "Normandie"},
     # Nouvelle-Aquitaine
     {"authority": "Préfet", "region": "Nouvelle-Aquitaine"},
+    {"authority": "MRAe", "region": "Nouvelle-Aquitaine"},
     # Occitanie
     {"authority": "Préfet", "region": "Occitanie"},
     {"authority": "MRAe", "region": "Occitanie"},
@@ -55,10 +59,8 @@ TARGETS = [
     {"authority": "MRAe", "region": "Provence-Alpes-Côte d'Azur"},
     #
     # MISSING :
-    # {"authority": "Préfet", "region": "Guadeloupe"},
+    #
     # {"authority": "MRAe", "region": "Guadeloupe"},
-    # {"authority": "MRAe", "region": "Hauts-de-France"},
-    # {"authority": "MRAe", "region": "Nouvelle-Aquitaine"},
     # {"authority": "Préfet", "region": "Saint-Martin"},
     # {"authority": "MRAe", "region": "Saint-Martin"},
     # {"authority": "Préfet", "region": "Saint-Pierre-et-Miquelon"},
