@@ -18,6 +18,7 @@ class DocumentItem(Item):
     category_local = Field()
 
     source_scraper = Field()
+    file_id = Field()
     source_file_url = Field()
     source_filename = Field()
     source_page_url = Field()

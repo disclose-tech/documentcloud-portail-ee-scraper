@@ -18,6 +18,7 @@ from documentcloud.constants import SUPPORTED_EXTENSIONS
 
 from .log import SilentDropItem
 from .departments import department_from_authority, departments_from_project_name
+from .event_data import load_archive, normalize_event_data
 
 
 class SpiderPipeline:
@@ -196,6 +197,9 @@ class ProjectIDPipeline:
 class UploadPipeline(SpiderPipeline):
     """Upload document to DocumentCloud & store event data."""
 
+    # Number of uploads between two saves of the event data on DocumentCloud
+    EVENT_DATA_SAVE_INTERVAL = 25
+
     def open_spider(self):
         spider = self.spider
         documentcloud_logger = logging.getLogger("documentcloud")
@@ -203,10 +207,20 @@ class UploadPipeline(SpiderPipeline):
         squarelet_logger = logging.getLogger("squarelet")
         squarelet_logger.setLevel(logging.WARNING)
 
+        # True when spider.event_data differs from what is stored on DocumentCloud
+        self.has_unsaved_changes = False
+        self.unsaved_uploads = 0
+
+        # Archived event data (loaded from disk, never stored on DocumentCloud)
+        spider.archived_event_data = load_archive()
+        spider.logger.info(
+            f"Loaded archived event data ({len(spider.archived_event_data)} documents)"
+        )
+
         if not spider.dry_run:
             try:
                 spider.logger.info("Loading event data from DocumentCloud...")
-                spider.event_data = spider.load_event_data()
+                event_data = spider.load_event_data()
             except Exception as e:
                 raise Exception("Error loading event data").with_traceback(
                     e.__traceback__
@@ -218,26 +232,53 @@ class UploadPipeline(SpiderPipeline):
 
                 with open("event_data.json", "r") as file:
                     spider.logger.info("Loading event data from local JSON file...")
-                    data = json.load(file)
-                    spider.event_data = data
+                    event_data = json.load(file)
             except:
-                spider.event_data = {}
+                event_data = {}
 
-        if spider.event_data:
-            spider.logger.info(
-                f"Loaded event data ({len(spider.event_data)} documents)"
-            )
+        if event_data:
+            spider.logger.info(f"Loaded event data ({len(event_data)} documents)")
         else:
             spider.logger.info("No event data was loaded.")
-            spider.event_data = {}
+            event_data = {}
 
-        # ignored docs
-        ignore_url = "https://gatew-evaluation-environnementale.developpement-durable.gouv.fr/api/Attachment/PublishedDownload?ctsFileId=142103"
-        if not ignore_url in spider.event_data:
-            spider.event_data[ignore_url] = {
-                "last_seen": datetime.datetime.now().isoformat(timespec="seconds"),
-                "target_year": "2025",
-            }
+        # Convert legacy keys (full download URLs) to file IDs
+        spider.event_data = normalize_event_data(event_data)
+        if spider.event_data.keys() != event_data.keys():
+            spider.logger.info("Converted event data keys to file IDs.")
+            self.has_unsaved_changes = True
+
+        # Remove the entries that have been archived
+        archived = spider.event_data.keys() & spider.archived_event_data.keys()
+        if archived:
+            for file_id in archived:
+                del spider.event_data[file_id]
+            spider.logger.info(
+                f"Removed {len(archived)} archived documents from event data "
+                f"({len(spider.event_data)} remaining)"
+            )
+            self.has_unsaved_changes = True
+
+    def store_event_data(self):
+        """Stores the event data on DocumentCloud (only from the web interface)."""
+
+        spider = self.spider
+
+        if spider.dry_run or not spider.run_id:
+            return
+
+        try:
+            spider.store_event_data(spider.event_data)
+        except Exception as e:
+            # Kept in memory: stored with the next batch or when the spider closes
+            spider.logger.warning(f"Error storing event data: {e!r}")
+        else:
+            self.has_unsaved_changes = False
+            self.unsaved_uploads = 0
+            spider.logger.info(
+                f"Stored event data ({len(spider.event_data)} documents, "
+                f"{len(json.dumps(spider.event_data)) / 1000:.1f} KB)"
+            )
 
     def process_item(self, item):
 
@@ -289,16 +330,18 @@ class UploadPipeline(SpiderPipeline):
             # ).isoformat()
             now = datetime.datetime.now().isoformat(timespec="seconds")
 
-            spider.event_data[item["source_file_url"]] = {
+            spider.event_data[str(item["file_id"])] = {
                 # "last_modified": last_modified,
                 "last_seen": now,
                 "target_year": item["year"],
                 # "run_id": spider.run_id,
             }
+            self.has_unsaved_changes = True
+            self.unsaved_uploads += 1
 
-            # Save event data after each upload
-            if spider.run_id:  # only from the web interface
-                spider.store_event_data(spider.event_data)
+            # Save event data by batches of uploads
+            if self.unsaved_uploads >= self.EVENT_DATA_SAVE_INTERVAL:
+                self.store_event_data()
 
         return item
 
@@ -308,10 +351,10 @@ class UploadPipeline(SpiderPipeline):
         spider = self.spider
 
         if not spider.dry_run and spider.run_id:
-            spider.store_event_data(spider.event_data)
-            spider.logger.info(
-                f"Uploaded event data ({len(spider.event_data)} documents)"
-            )
+            if self.has_unsaved_changes:
+                self.store_event_data()
+            else:
+                spider.logger.info("No changes to event data, not storing it.")
 
             if spider.upload_event_data:
                 # Upload the event_data to the DocumentCloud interface

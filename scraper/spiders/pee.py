@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import scrapy
 from scrapy.exceptions import CloseSpider
 
+from ..event_data import IGNORED_FILE_IDS
 from ..items import DocumentItem
 
 TARGETS = [
@@ -102,6 +103,15 @@ class PEESpider(scrapy.Spider):
                     f"Closed due to time limit ({self.time_limit} minutes)"
                 )
 
+    def is_known(self, file_id):
+        """Whether the file was already uploaded (archived or live event data) or is ignored."""
+        file_id = str(file_id)
+        return (
+            file_id in IGNORED_FILE_IDS
+            or file_id in self.archived_event_data
+            or file_id in self.event_data
+        )
+
     def check_upload_limit(self):
         """Closes the spider if the upload limit is attained."""
         if self.upload_limit_attained:
@@ -176,10 +186,7 @@ class PEESpider(scrapy.Spider):
 
                 already_fully_scraped = True
                 for f_id in valid_file_ids:
-                    if (
-                        not DOCUMENT_DOWNLOAD_URL.format(file_id=f_id)
-                        in self.event_data
-                    ):
+                    if not self.is_known(f_id):
                         already_fully_scraped = False
 
                 if not already_fully_scraped:
@@ -239,7 +246,7 @@ class PEESpider(scrapy.Spider):
             file_id = a["id"]
 
             # Check event_data
-            if not DOCUMENT_DOWNLOAD_URL.format(file_id=file_id) in self.event_data:
+            if not self.is_known(file_id):
 
                 # Publication Date
                 if a["folderName"] in ["Décision", "Avis"]:
@@ -265,6 +272,7 @@ class PEESpider(scrapy.Spider):
                     project=project_title,
                     authority=data["authority"],
                     category_local=data["categoryName"],
+                    file_id=file_id,
                     source_file_url=DOCUMENT_DOWNLOAD_URL.format(file_id=file_id),
                     source_page_url=PROJECT_PAGE_WEB_URL.format(
                         document_id=document_id
