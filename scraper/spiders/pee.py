@@ -80,6 +80,9 @@ PROJECT_PAGE_WEB_URL = "https://evaluation-environnementale.developpement-durabl
 
 DOCUMENT_DOWNLOAD_URL = "https://gatew-evaluation-environnementale.developpement-durable.gouv.fr/api/Attachment/PublishedDownload?ctsFileId={file_id}"
 
+# Large documents (up to DOWNLOAD_MAXSIZE) can take more than the default 180 s
+DOCUMENT_DOWNLOAD_TIMEOUT = 600
+
 
 class PEESpider(scrapy.Spider):
     name = "PEE_spider"
@@ -286,6 +289,7 @@ class PEESpider(scrapy.Spider):
                     doc_item["source_file_url"],
                     callback=self.download_document,
                     cb_kwargs=dict(doc_item=doc_item, file_id=file_id),
+                    meta={"download_timeout": DOCUMENT_DOWNLOAD_TIMEOUT},
                 )
 
     def download_document(self, response, doc_item, file_id):

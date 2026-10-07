@@ -8,3 +8,4 @@ jobs:
     with:
       timeout: 360
       python-version: "3.13"
+      apt-packages: ghostscript

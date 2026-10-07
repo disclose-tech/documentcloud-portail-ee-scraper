@@ -34,8 +34,8 @@ DOWNLOAD_DELAY = 1.5
 # CONCURRENT_REQUESTS_PER_DOMAIN = 16
 # CONCURRENT_REQUESTS_PER_IP = 16
 
-DOWNLOAD_WARNSIZE = 536870912  # 500 Mb
-DOWNLOAD_MAXSIZE = 1073741824 * 1  # Gb
+DOWNLOAD_WARNSIZE = 500 * 1024 * 1024  # DocumentCloud's upload limit
+DOWNLOAD_MAXSIZE = 2 * 1024 * 1024 * 1024  # 2 GB
 
 # Disable cookies (enabled by default)
 # Set to false following advice from Scrapy's docs
@@ -79,6 +79,7 @@ ITEM_PIPELINES = {
     "scraper.pipelines.UploadLimitPipeline": 500,
     "scraper.pipelines.TagDepartmentsPipeline": 600,
     "scraper.pipelines.ProjectIDPipeline": 700,
+    "scraper.pipelines.CompressPipeline": 750,
     "scraper.pipelines.UploadPipeline": 800,
     "scraper.pipelines.MailPipeline": 900,
     "scraper.pipelines.DeleteFilesPipeline": 999,

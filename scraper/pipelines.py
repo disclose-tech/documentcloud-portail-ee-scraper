@@ -19,6 +19,7 @@ from documentcloud.constants import SUPPORTED_EXTENSIONS
 from .log import SilentDropItem
 from .departments import department_from_authority, departments_from_project_name
 from .event_data import load_archive, normalize_event_data
+from .compression import MAX_UPLOAD_SIZE, compress_pdf, ghostscript_available, size_mb
 
 
 class SpiderPipeline:
@@ -194,6 +195,87 @@ class ProjectIDPipeline:
         return item
 
 
+class CompressPipeline(SpiderPipeline):
+    """Compresses the files over DocumentCloud's upload limit (see compression.py).
+
+    Files that can't be brought under the limit are dropped (not uploaded, not added
+    to the event data) and reported to the admin by email at the end of the run.
+    """
+
+    def open_spider(self):
+        self.gs_missing = False
+        self.too_large_items = []
+
+    def drop_too_large(self, item, original_size):
+        """Deletes the file and drops the item, to be reported by email."""
+
+        os.remove(item["local_file_path"])
+        self.too_large_items.append((item, original_size))
+        raise SilentDropItem("Over DocumentCloud's upload limit")
+
+    def process_item(self, item):
+
+        spider = self.spider
+        original_path = item["local_file_path"]
+        original_size = os.path.getsize(original_path)
+
+        if original_size <= MAX_UPLOAD_SIZE:
+            return item
+
+        file_id = item["file_id"]
+
+        if not ghostscript_available():
+            self.gs_missing = True
+            spider.logger.warning(
+                f"Ghostscript not available, file {file_id} ({size_mb(original_size)}) can't be compressed"
+            )
+            self.drop_too_large(item, original_size)
+
+        compressed_path = compress_pdf(original_path, MAX_UPLOAD_SIZE, spider.logger)
+
+        if compressed_path is None:
+            spider.logger.warning(
+                f"File {file_id} ({size_mb(original_size)}) can't be brought under the upload limit"
+            )
+            self.drop_too_large(item, original_size)
+
+        os.remove(original_path)
+        item["local_file_path"] = compressed_path
+        item["compressed"] = True
+
+        return item
+
+    def close_spider(self):
+        """Reports the files that couldn't be uploaded to the admin."""
+
+        spider = self.spider
+
+        if not self.too_large_items or spider.dry_run:
+            return
+
+        subject = "Maintenance needed on PortailEE scraper"
+
+        content = (
+            f"{len(self.too_large_items)} file(s) over DocumentCloud's 500 MB upload limit "
+            "could not be uploaded"
+            + (
+                ": Ghostscript is not available, so they were not compressed."
+                if self.gs_missing
+                else ", even after compression."
+            )
+            + "\n\nThey will be downloaded again at each run. Upload them manually "
+            "and/or add their IDs to IGNORED_FILE_IDS in scraper/event_data.py.\n\n"
+            + "\n\n".join(
+                f"{item['file_id']} - {item['title']} ({size_mb(original_size)})\n"
+                f"project: {item['project']}\n"
+                f"{item['source_file_url']}\n{item['source_page_url']}"
+                for item, original_size in self.too_large_items
+            )
+        )
+
+        spider.send_mail(subject, content)
+
+
 class UploadPipeline(SpiderPipeline):
     """Upload document to DocumentCloud & store event data."""
 
@@ -304,6 +386,9 @@ class UploadPipeline(SpiderPipeline):
         if adapter.get("departments") and adapter.get("departments_sources"):
             data["departments"] = item["departments"]
             data["departments_sources"] = item["departments_sources"]
+
+        if adapter.get("compressed"):
+            data["compressed"] = "true"
 
         # if item["error"]:
         #   data["_tag"] = "hidden"

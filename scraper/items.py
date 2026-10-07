@@ -43,3 +43,6 @@ class DocumentItem(Item):
     departments_sources = Field()
 
     local_file_path = Field()
+
+    # Set by CompressPipeline when the file was compressed to fit DocumentCloud's upload limit
+    compressed = Field()
