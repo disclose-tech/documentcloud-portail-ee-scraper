@@ -9,6 +9,7 @@ import json
 import hashlib
 import shutil
 import sys
+from zoneinfo import ZoneInfo
 
 from itemadapter import ItemAdapter
 
@@ -46,6 +47,12 @@ class ParseDatePipeline:
 
         publication_dt = datetime.datetime.strptime(
             item["publication_timestamp"], "%Y-%m-%dT%H:%M:%S.%f"
+        )
+        # Convert to UTC.
+        publication_dt = (
+            publication_dt.replace(tzinfo=ZoneInfo("Europe/Paris"))
+            .astimezone(datetime.UTC)
+            .replace(tzinfo=None)
         )
 
         item["publication_date"] = publication_dt.strftime("%Y-%m-%d")
